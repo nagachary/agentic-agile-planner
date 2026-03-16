@@ -1,6 +1,5 @@
 package com.naga.ai.requirement.service;
 
-import com.naga.ai.requirement.controller.RequirementController;
 import com.naga.ai.requirement.model.AnalysisResponse;
 import com.naga.ai.requirement.tools.RequirementTools;
 import org.slf4j.Logger;
