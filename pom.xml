@@ -12,7 +12,7 @@
     </parent>
     <groupId>com.naga.ai</groupId>
     <artifactId>agentic-agile-planner</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <description>Spring Boot Agent AI project for Agile project planning</description>
     <packaging>pom</packaging>
     <name>agentic-agile-planner</name>
@@ -23,7 +23,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>3.5.11</spring-boot.version>
         <spring-ai.version>1.0.1</spring-ai.version>
-        <a2a-sdk.version>0.3.3.Final</a2a-sdk.version>
+       <!-- <a2a-sdk.version>0.3.3.Final</a2a-sdk.version> -->
+        <a2a-sdk-server.version>0.2.5</a2a-sdk-server.version>
+        <a2a-sdk-client.version>1.0.0.Alpha1</a2a-sdk-client.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -34,20 +36,41 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <dependency>
+            <!--<dependency>
                 <groupId>io.github.a2asdk</groupId>
                 <artifactId>a2a-java-sdk-server</artifactId>
                 <version>${a2a-sdk.version}</version>
+            </dependency> -->
+            <!-- A2A server core — used by agent modules -->
+            <dependency>
+                <groupId>io.github.a2asdk</groupId>
+                <artifactId>a2a-java-sdk-server-common</artifactId>
+                <version>${a2a-sdk-server.version}</version>
             </dependency>
+
+            <!-- A2A spec — used by agent modules -->
+            <dependency>
+                <groupId>io.github.a2asdk</groupId>
+                <artifactId>a2a-java-sdk-spec</artifactId>
+                <version>${a2a-sdk-server.version}</version>
+            </dependency>
+
+            <!-- A2A client — used by orchestrator only -->
             <dependency>
                 <groupId>io.github.a2asdk</groupId>
                 <artifactId>a2a-java-sdk-client</artifactId>
-                <version>${a2a-sdk.version}</version>
+                <version>${a2a-sdk-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.naga.ai</groupId>
+                <artifactId>common-utility</artifactId>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
     <modules>
         <module>common-utility</module>
+        <module>requirement-analysis-agent</module>
     </modules>
     <build>
         <pluginManagement>

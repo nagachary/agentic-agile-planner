@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.naga.ai</groupId>
+		<artifactId>agentic-agile-planner</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<artifactId>requirement-analysis-agent</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<name>requirement-analysis-agent</name>
+	<description>
+		Requirement Analysis A2A agent that analyses plain text requirements,
+		generates user stories with acceptance criteria,
+		creates an Epic in Jira and stores acceptance
+		criteria in VectorStore for downstream agents.
+	</description>
+	<properties/>
+	<dependencies>
+		<dependency>
+			<groupId>com.naga.ai</groupId>
+			<artifactId>common-utility</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-starter-model-ollama</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-starter-vector-store-pgvector</artifactId>
+		</dependency>
+		<!--<dependency>
+			<groupId>io.github.a2asdk</groupId>
+			<artifactId>a2a-java-sdk-server</artifactId>
+			<version>${a2a-sdk.version}</version>
+		</dependency>-->
+		<!-- A2A server core classes — framework agnostic -->
+		<dependency>
+			<groupId>io.github.a2asdk</groupId>
+			<artifactId>a2a-java-sdk-server-common</artifactId>
+		</dependency>
+		<!-- A2A spec classes — AgentCard, AgentSkill etc -->
+		<dependency>
+			<groupId>io.github.a2asdk</groupId>
+			<artifactId>a2a-java-sdk-spec</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
