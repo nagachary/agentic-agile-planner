@@ -10,7 +10,6 @@
 	</parent>
 
 	<artifactId>requirement-analysis-agent</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
 	<name>requirement-analysis-agent</name>
 	<description>
 		Requirement Analysis A2A agent that analyses plain text requirements,
@@ -18,7 +17,6 @@
 		creates an Epic in Jira and stores acceptance
 		criteria in VectorStore for downstream agents.
 	</description>
-	<properties/>
 	<dependencies>
 		<dependency>
 			<groupId>com.naga.ai</groupId>
@@ -50,11 +48,6 @@
 		<dependency>
 			<groupId>io.github.a2asdk</groupId>
 			<artifactId>a2a-java-sdk-spec</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
