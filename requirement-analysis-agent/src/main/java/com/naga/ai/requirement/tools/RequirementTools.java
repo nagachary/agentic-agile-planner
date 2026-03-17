@@ -72,7 +72,7 @@ public class RequirementTools {
             USE THIS TOOL FIRST when user approves the stories.
             Creates Epic in Jira BEFORE storing in VectorStore
             so the Epic key is available for metadata linking.
-            Returns Epic key e.g. PLAN-1 to use in next tool call.
+            Returns Epic key to use in next tool call.
             ALWAYS call storeAcceptanceCriteria AFTER this tool.
             """)
     public String createEpicInJira(
@@ -120,11 +120,11 @@ public class RequirementTools {
                     "Session ID for this requirement session")
             String sessionId,
             @ToolParam(description =
-                    "Epic key returned from createEpicInJira " +
-                            "e.g. PLAN-1. Required for metadata linking.")
+                    "Epic key returned from createEpicInJira. " +
+                            ".Required for metadata linking.")
             String epicKey,
             @ToolParam(description =
-                    "Project key e.g. PLAN")
+                    "Project key")
             String projectKey) {
 
         logger.info("Tool storeAcceptanceCriteria called " +
