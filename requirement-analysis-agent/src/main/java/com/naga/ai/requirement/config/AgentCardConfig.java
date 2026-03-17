@@ -6,6 +6,7 @@ import io.a2a.spec.AgentSkill;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class AgentCardConfig {
     @Value("${server.servlet.context-path:/requirement-analysis-agent}")
     private String contextPath;
 
+    @Bean
     public AgentCard agentCard() {
 
         return new AgentCard.Builder()
@@ -90,6 +92,7 @@ public class AgentCardConfig {
                 ))
                 .supportsAuthenticatedExtendedCard(false)
                 .url("http://localhost:" + port + contextPath)
+                .version("1.0.0")
                 .build();
 
     }

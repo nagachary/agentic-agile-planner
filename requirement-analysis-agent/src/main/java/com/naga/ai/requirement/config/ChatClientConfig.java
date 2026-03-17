@@ -20,7 +20,7 @@ public class ChatClientConfig {
     private static final Logger logger =
             LoggerFactory.getLogger(ChatClientConfig.class);
 
-    @Value("classpath:prompts/requirement-analysis-system.txt")
+    @Value("classpath:prompt/requirement-analysis-system.txt")
     private Resource systemPromptTemplate;
 
     @Bean

@@ -210,9 +210,8 @@ public class RequirementA2AServerController {
             @RequestBody ApproveRequest request) {
 
         logger.info("Received approval for " +
-                        "sessionId: {} projectKey: {}",
-                request.sessionId(),
-                request.projectKey());
+                        "sessionId: {}",
+                request.sessionId());
 
         String result = requirementService
                 .approveStories(
