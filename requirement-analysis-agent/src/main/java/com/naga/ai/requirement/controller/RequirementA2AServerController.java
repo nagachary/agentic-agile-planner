@@ -1,6 +1,8 @@
 package com.naga.ai.requirement.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.naga.ai.requirement.model.*;
 import com.naga.ai.requirement.service.RequirementService;
 import io.a2a.spec.AgentCard;
@@ -8,12 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/requirement")
 public class RequirementA2AServerController {
     private static final Logger logger =
             LoggerFactory.getLogger(RequirementA2AServerController.class);
@@ -168,7 +170,7 @@ public class RequirementA2AServerController {
         return response;
     }
 
-    @PostMapping("/analyze")
+    @PostMapping("/requirement/analyze")
     public ResponseEntity<AnalysisResponse> analyze(
             @RequestBody AnalyzeRequest request) {
 
@@ -184,7 +186,7 @@ public class RequirementA2AServerController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/refine")
+    @PostMapping("/requirement/refine")
     public ResponseEntity<RefineResponse> refine(
             @RequestBody RefineRequest request) {
 
@@ -205,7 +207,7 @@ public class RequirementA2AServerController {
         );
     }
 
-    @PostMapping("/approve")
+    @PostMapping("/requirement/approve")
     public ResponseEntity<ApproveResponse> approve(
             @RequestBody ApproveRequest request) {
 
