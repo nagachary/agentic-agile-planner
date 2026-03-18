@@ -67,18 +67,22 @@ public class RequirementService {
                 sessionId);
 
         String approvalMessage = String.format("""
-                The user has approved the stories.
-                Session ID for this approval: %s
-                Project key: %s
+                 The user has approved the stories.
                 
-                Please proceed in this exact order:
-                1. Call createEpicInJira with a suitable
-                   Epic name and requirement description
-                2. Use the returned Epic key to call
-                   storeAcceptanceCriteria
-                3. Confirm completion to the user with
-                   the Epic key
-                """, sessionId, projectKey);
+                                            Use these EXACT values — do not change them:
+                                            Session ID: %s
+                                            Project key: %s
+                
+                                            Proceed in this EXACT order:
+                                            1. Call createEpicInJira with Epic name, requirement description from memory
+                                            2. Use the REAL Epic key returned by that tool do not invent an Epic key
+                                            3. Call storeAcceptanceCriteria with:
+                                               - approvedStories: full stories from memory
+                                               - sessionId: %s
+                                               - epicKey: the REAL key from step 2
+                                               - projectKey: %s
+                                            4. Confirm Epic key to user
+                """, sessionId, projectKey, sessionId, projectKey);
         String response = callLlm(approvalMessage, sessionId);
         clearSession(sessionId);
 

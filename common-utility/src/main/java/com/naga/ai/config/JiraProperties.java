@@ -1,7 +1,10 @@
 package com.naga.ai.config;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+
+import java.util.Objects;
 
 @Component
 @ConfigurationProperties(prefix = "jira")
@@ -50,6 +53,21 @@ public class JiraProperties {
 
     public void setStoryPointsField(String storyPointsField) {
         this.storyPointsField = storyPointsField;
+    }
+
+    @PostConstruct
+    public void validate() {
+        Objects.requireNonNull(baseUrl,
+                "jira.baseUrl is required");
+        Objects.requireNonNull(email,
+                "jira.email is required — " +
+                        "set JIRA_EMAIL env variable");
+        Objects.requireNonNull(apiToken,
+                "jira.apiToken is required — " +
+                        "set JIRA_API_TOKEN env variable");
+        Objects.requireNonNull(projectSpaceKey,
+                "jira.projectSpaceKey is required — " +
+                        "set JIRA_PROJECT_KEY env variable");
     }
 
     @Override

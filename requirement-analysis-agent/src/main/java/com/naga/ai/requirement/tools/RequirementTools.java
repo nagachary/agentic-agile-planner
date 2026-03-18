@@ -39,19 +39,20 @@ public class RequirementTools {
      * Tool 1 — Analyze Requirement.
      * LLM calls this when user provides a new requirement.
      */
-    @Tool(description = """
-            USE THIS TOOL when the user provides a NEW requirement
-            or feature request for the first time.
-            DO NOT use this for refinement or feedback on
-            existing stories — just respond directly for those.
-            This tool structures the requirement for LLM analysis.
+    @Tool(name = "analyzeRequirement", description = """
+                  USE THIS TOOL ONLY ONCE when user provides
+                               a NEW requirement for the first time.
+                               DO NOT call this tool again after it returns.
+                               DO NOT call this tool for refinement.
+                               After this tool returns — generate stories
+                               directly in your response without calling
+                               any tool again.
             Input: the complete plain text requirement from user.
             Output: structured requirement ready for story generation.
             """)
     public String analyzeRequirement(
             @ToolParam(description =
-                    "Complete plain text requirement exactly " +
-                            "as provided by the user. Do not modify it.")
+                    "Complete plain text requirement exactly as provided by the user. Do not modify it.")
             String requirementText) {
 
         logger.info("Tool analyzeRequirement called " +
@@ -61,19 +62,35 @@ public class RequirementTools {
         return String.format("""
                 Requirement received for analysis:
                 %s
-                
-                Please generate user stories with Gherkin
-                acceptance criteria for this requirement.
-                Present them clearly numbered for user review.
                 """, requirementText);
     }
 
-    @Tool(description = """
-            USE THIS TOOL FIRST when user approves the stories.
-            Creates Epic in Jira BEFORE storing in VectorStore
-            so the Epic key is available for metadata linking.
-            Returns Epic key to use in next tool call.
-            ALWAYS call storeAcceptanceCriteria AFTER this tool.
+    @Tool(name = "createEpicInJira", description = """
+            WHEN TO USE:
+                            Call this tool FIRST on user approval only.
+                            Never call before user explicitly approves.
+                            Never call more than once per approval.
+            
+                            EXECUTION ORDER:
+                            This tool must be called before storeAcceptanceCriteria.
+                            Never call both tools at the same time.
+                            Always wait for this tool result before calling storeAcceptanceCriteria.
+            
+                            PARAMETER RULES:
+                            epicName must not be null or empty.
+                            If epicName is null use requirement title from conversation memory.
+                            requirementDescription must not be null.
+                            If null use epicName value as fallback.
+            
+                            CALL LIMIT:
+                            Call this tool EXACTLY ONCE per approval.
+                            Never call more than once per session.
+                            Never call in parallel with other tools.
+            
+                            RETURNS:
+                            Real Epic key
+                            Use this key in storeAcceptanceCriteria.
+                            Never invent or assume the Epic key value.
             """)
     public String createEpicInJira(
             @ToolParam(description =
@@ -84,6 +101,12 @@ public class RequirementTools {
             String requirementDescription) {
 
         logger.info("Tool createEpicInJira called: {}", epicName);
+
+        if (epicName == null || epicName.isBlank()) {
+            logger.warn("createEpicInJira called with " +
+                    "null epicName — skipping duplicate call");
+            return "EpicName is NULL Or Empty";
+        }
 
         try {
             JiraTicket epic = jiraClient.createTicket(
@@ -101,20 +124,34 @@ public class RequirementTools {
 
         } catch (Exception e) {
             logger.error("Failed to create Epic", e);
-            return "Failed to create Epic: " + e.getMessage();
+            return "EPIC_CREATION_FAILED : Failed to create Epic: " + e.getMessage();
         }
     }
 
-    @Tool(description = """
-            USE THIS TOOL SECOND after createEpicInJira succeeds.
-            Stores approved acceptance criteria in VectorStore
-            WITH the Epic key from the previous tool call.
-            Epic key is required — always call createEpicInJira first.
+    @Tool(name = "storeAcceptanceCriteria", description = """
+            WHEN TO USE:
+                            Call this tool SECOND on user approval only.
+                            Never call before createEpicInJira succeeds.
+                            Never call if createEpicInJira failed or returned EPIC_CREATION_FAILED.
+            
+                            EXECUTION ORDER:
+                            Step 1 — createEpicInJira must be called first
+                            Step 2 — this tool called second
+                            Never call both tools at the same time.
+                            Always wait for createEpicInJira result before calling this tool.
+            
+                            EPIC KEY RULES:
+                            epicKey must be the real key returned by createEpicInJira.
+                            Never invent or assume the epicKey value.
+                            Never call this tool if epicKey is null.
+            
+                            CALL LIMIT:
+                            Call this tool EXACTLY ONCE per approval.
+                            Never call more than once per session.
             """)
     public String storeAcceptanceCriteria(
             @ToolParam(description =
-                    "Complete approved user stories and " +
-                            "acceptance criteria text")
+                    "Complete approved user stories and acceptance criteria text")
             String approvedStories,
             @ToolParam(description =
                     "Session ID for this requirement session")
@@ -129,6 +166,17 @@ public class RequirementTools {
 
         logger.info("Tool storeAcceptanceCriteria called " +
                 "for Epic: {} session: {}", epicKey, sessionId);
+
+        if (epicKey == null || epicKey.isBlank()) {
+            logger.warn("epicKey is null");
+            return "STORE_SKIPPED: epicKey is required and null.";
+        }
+
+        if (approvedStories == null
+                || approvedStories.isBlank()) {
+            logger.warn("approvedStories is null");
+            return "STORE_SKIPPED: approvedStories is required and it cannot be null or empty.";
+        }
 
         try {
             Document document = new Document(
@@ -157,5 +205,4 @@ public class RequirementTools {
             return "Failed to store: " + e.getMessage();
         }
     }
-
 }
