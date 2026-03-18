@@ -87,7 +87,7 @@ linking the requirement to all downstream sprint stories. The Epic key is return
 the user and stored in VectorStore metadata for downstream agents to reference.
 
 - Creates Epic via Jira REST API v3 using Basic Auth
-- Returns real Epic key e.g. `NC018JIRA-1` for Sprint Planner Agent to link stories
+- Returns real Epic key e.g. `EPICJIRA-1` for Sprint Planner Agent to link stories
 - Epic description contains the full approved requirement text
 
 ---
