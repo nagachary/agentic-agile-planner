@@ -22,31 +22,38 @@ public class OrchestratorController {
     }
 
     @PostMapping("/requirement/start")
-    public ResponseEntity<OrchestratorResponse> startRequirement(@RequestBody StartRequest request) {
+    public ResponseEntity<String> startRequirement(@RequestBody StartRequest request) {
         logger.info("startRequirement");
 
-        OrchestratorResponse response = orchestratorService.startRequirement( request.requirement());
+        String response = orchestratorService.startRequirement( request.requirement());
         return ResponseEntity.ok(response);
     }
     @PostMapping("/requirement/refine")
-    public ResponseEntity<OrchestratorResponse> refineRequirement(@RequestBody RefineRequest request) {
+    public ResponseEntity<String> refineRequirement(@RequestBody RefineRequest request) {
         logger.info("refineRequirement — contextId: {}", request.contextId());
 
-        OrchestratorResponse response = orchestratorService.refineRequirement(request.contextId(), request.feedback());
+        String response = orchestratorService.refineRequirement(request.contextId(), request.feedback());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/requirement/approve")
-    public ResponseEntity<OrchestratorResponse> approveRequirement(@RequestBody ApproveRequest request) {
+    public ResponseEntity<String> approveRequirement(@RequestBody ApproveRequest request) {
         logger.info("approveRequirement — contextId: {}", request.contextId());
 
-        OrchestratorResponse response = orchestratorService.approveRequirement(request.contextId(), request.projectKey());
+        String response = orchestratorService.approveRequirement(request.contextId(), request.projectKey());
         return ResponseEntity.ok(response);
     }
     @GetMapping("/agents")
     public ResponseEntity<Object> getAgents() {
         logger.info("Get All Agents ");
         return ResponseEntity.ok(agentRegistry.getAllAgents());
+    }
+
+    @PostMapping("/plan")
+    public ResponseEntity<String> plan(@RequestBody PlanRequest request) {
+        logger.info("POST /plan");
+        String result = orchestratorService.plan(request.requirement(), request.projectKey());
+        return ResponseEntity.ok(result);
     }
 
 }

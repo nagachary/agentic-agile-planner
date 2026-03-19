@@ -7,6 +7,7 @@ import io.a2a.spec.AgentCard;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import java.util.Map;
  * This is the agent discovery service for the registered agents using the agent cards
  */
 @Service
+@Lazy(false)
 public class AgentDiscoveryService {
     private static final Logger logger = LoggerFactory.getLogger(AgentDiscoveryService.class);
 
@@ -32,7 +34,7 @@ public class AgentDiscoveryService {
     public void discoverAgents() {
         logger.info("discoverAgents : ");
 
-        List<String> agentUrls = agentProperties.getAgentUrls();
+        List<String> agentUrls = agentProperties.getUrls();
         if (agentUrls == null || agentUrls.isEmpty()) {
             logger.warn("No agent URLs configured ");
             return;
@@ -47,6 +49,7 @@ public class AgentDiscoveryService {
 
     private void discoverAgent(String agentUrl) {
         logger.info("discoverAgent agent at: {}", agentUrl);
+        logger.info("Trying agent card at: {}/.well-known/agent-card.json", agentUrl);
 
         try {
             AgentCard agentCard = new A2ACardResolver(agentUrl).getAgentCard();
