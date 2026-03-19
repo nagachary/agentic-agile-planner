@@ -15,7 +15,7 @@ public class A2AMessageBuilder {
 
     public Message buildMessage(String messageText) {
         logger.info("buildMessage :");
-        return new Message.Builder()
+        return  Message.builder()
                 .role(Message.Role.USER)
                 .messageId(UUID.randomUUID().toString())
                 .parts(List.of(new TextPart(messageText)))
@@ -24,7 +24,7 @@ public class A2AMessageBuilder {
 
     public Message buildFollowUp(String messageText, String contextId) {
         logger.info("buildFollowUp :");
-        return new Message.Builder()
+        return Message.builder()
                 .role(Message.Role.USER)
                 .messageId(UUID.randomUUID().toString())
                 .contextId(contextId)

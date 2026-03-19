@@ -27,7 +27,7 @@ public class A2AAgentClient {
     }
 
     private AgentResponse send(AgentCard agentCard, Message message) {
-        logger.info("Sending message — agent: {} messageId: {}", agentCard.name(), message.getMessageId());
+        logger.info("Sending message — agent: {} messageId: {}", agentCard.name(), message.messageId());
 
         ClientConfig clientConfig = ClientConfig.builder().setAcceptedOutputModes(List.of("text")).build();
         Client client = Client.builder(agentCard).clientConfig(clientConfig).build();

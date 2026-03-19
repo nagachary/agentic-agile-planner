@@ -27,11 +27,11 @@ public class A2AResponseParser {
 
         String contextId = null;
         if (event instanceof MessageEvent e) {
-            contextId = e.getMessage().getContextId();
+            contextId = e.getMessage().contextId();
         } else if (event instanceof TaskEvent e) {
-            contextId = e.getTask().getContextId();
+            contextId = e.getTask().contextId();
         } else if (event instanceof TaskUpdateEvent e) {
-            contextId = e.getTask().getContextId();
+            contextId = e.getTask().contextId();
         } else {
             logger.warn("Unknown client event : {} ", event.getClass().getSimpleName());
         }
@@ -55,13 +55,13 @@ public class A2AResponseParser {
         }
 
         if (event instanceof MessageEvent e) {
-            return textFromParts(e.getMessage().getParts());
+            return textFromParts(e.getMessage().parts());
         }
         if (event instanceof TaskEvent e) {
-            return textFromArtifacts(e.getTask().getArtifacts());
+            return textFromArtifacts(e.getTask().artifacts());
         }
         if (event instanceof TaskUpdateEvent e) {
-            return textFromArtifacts(e.getTask().getArtifacts());
+            return textFromArtifacts(e.getTask().artifacts());
         }
 
         logger.warn("Unknown ClientEvent type: {}", event.getClass().getSimpleName());
@@ -79,7 +79,7 @@ public class A2AResponseParser {
         StringBuilder response = new StringBuilder();
         for (Part<?> part : parts) {
             if (part instanceof TextPart tp) {
-                String text = tp.getText();
+                String text = tp.text();
                 if (text != null
                         && !text.isBlank()) {
                     if (!response.isEmpty()) {
@@ -105,15 +105,12 @@ public class A2AResponseParser {
             if (null == parts || parts.isEmpty()) {
                 continue;
             }
-
-            for (Part<?> part : parts) {
-                String string = part.getKind().asString();
-                if (StringUtils.hasText(string)) {
-                    if (!response.isEmpty()) {
-                        response.append("\n");
-                    }
-                    response.append(string);
+            String text = textFromParts(parts);
+            if (!text.isBlank()) {
+                if (!response.isEmpty()) {
+                    response.append("\n");
                 }
+                response.append(text);
             }
         }
 
