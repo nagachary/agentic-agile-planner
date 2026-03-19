@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.naga.ai.requirement.model.AnalysisResponse;
 import com.naga.ai.requirement.service.RequirementService;
+import io.a2a.jsonrpc.common.json.JsonUtil;
 import io.a2a.spec.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +43,11 @@ public class A2AServerController {
 
     @PostMapping(value = "/", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ObjectNode> handleA2AMessage(@RequestBody JsonNode request) {
-
-        //logger.info("A2A message — contextId: {} messageId: {}",message.contextId(), message.messageId());
         logger.info("A2A request received — method: {}",request.path("method").asText());
+
+        logger.info("Full request: {}", request);
+        logger.info("Request id: {}",request.path("id").asText());
+
         String requestId = request.path("id").asText("1");
 
         try {
@@ -56,8 +59,6 @@ public class A2AServerController {
                 messageText = parts.path(0).path("text").asText("");
             }
             logger.info("A2A message — contextId : {} - text: {}", contextId, messageText);
-            //String messageText = extractText(message);
-            // String contextId = message.contextId();
             String resultText;
             String taskContextId;
 
@@ -80,21 +81,38 @@ public class A2AServerController {
                 resultText = requirementService.refineStories(messageText, contextId);
                 taskContextId = contextId;
             }
+            logger.info("Returning task — contextId: {}", taskContextId);
 
             Task task = buildTask(taskContextId, resultText);
             logger.info("Returning task — contextId: {}", taskContextId);
 
+            String taskJson = JsonUtil.toJson(task);
+            logger.info("Task JSON from SDK: {}", taskJson);
+
+            JsonNode taskWrapper = objectMapper.readTree(taskJson);
+
+// Get inner task object
+            ObjectNode innerTask = (ObjectNode) (taskWrapper.has("task")
+                    ? taskWrapper.get("task") : taskWrapper);
+
+// Fix state to proto format
+            ObjectNode status = (ObjectNode) innerTask.path("status");
+            status.put("state", "TASK_STATE_COMPLETED");
+
+// Wrap back in "task" key
+            ObjectNode resultNode = objectMapper.createObjectNode();
+            resultNode.set("task", innerTask);
+
             ObjectNode response = objectMapper.createObjectNode();
             response.put("jsonrpc", "2.0");
             response.put("id", requestId);
-            response.set("result", objectMapper.valueToTree(task));
+            response.set("result", resultNode);
 
-            logger.info("Returning task — contextId: {}",taskContextId);
-            String responseJson = objectMapper.writeValueAsString(response);
-            logger.info("Response JSON: {}", responseJson);
-
+            logger.info("Response JSON: {}",
+                    objectMapper.writeValueAsString(response));
             return ResponseEntity.ok(response);
-        }catch (Exception exception) {
+
+        } catch (Exception exception) {
             logger.error("A2A processing failed: {}", exception.getMessage(), exception);
 
             // Return JSON-RPC error envelope

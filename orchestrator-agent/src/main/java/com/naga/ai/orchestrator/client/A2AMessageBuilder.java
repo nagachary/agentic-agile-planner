@@ -13,8 +13,8 @@ import java.util.UUID;
 public class A2AMessageBuilder {
     private static final Logger logger = LoggerFactory.getLogger(A2AMessageBuilder.class);
 
-    public Message buildMessage(String messageText) {
-        logger.info("buildMessage :");
+    public Message buildNewMessage(String messageText) {
+        logger.info("buildNewMessage :");
         return  Message.builder()
                 .role(Message.Role.USER)
                 .messageId(UUID.randomUUID().toString())
@@ -22,8 +22,8 @@ public class A2AMessageBuilder {
                 .build();
     }
 
-    public Message buildFollowUp(String messageText, String contextId) {
-        logger.info("buildFollowUp :");
+    public Message buildFollowUpMessage(String messageText, String contextId) {
+        logger.info("buildFollowUpMessage :");
         return Message.builder()
                 .role(Message.Role.USER)
                 .messageId(UUID.randomUUID().toString())
@@ -32,10 +32,10 @@ public class A2AMessageBuilder {
                 .build();
     }
 
-    public Message buildApproval(String contextId, String projectKey) {
-        logger.info("buildApproval :");
+    public Message buildApprovalMessage(String contextId, String projectKey) {
+        logger.info("buildApprovalMessage :");
         String approvalText = "Approved projectKey:" + projectKey;
-        return buildFollowUp(approvalText, contextId);
+        return buildFollowUpMessage(approvalText, contextId);
     }
 
 }

@@ -1,92 +1,128 @@
 package com.naga.ai.orchestrator.client;
 
-import io.a2a.client.Client;
-import io.a2a.client.config.ClientConfig;
 import io.a2a.client.transport.jsonrpc.JSONRPCTransport;
-import io.a2a.client.transport.jsonrpc.JSONRPCTransportConfig;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.Message;
+import io.a2a.spec.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 @Component
 public class A2AAgentClient {
-    private static final Logger logger = LoggerFactory.getLogger(A2AAgentClient.class);
-    private static final int TIMEOUT_SECONDS = 600;
+    private static final Logger logger =  LoggerFactory.getLogger(A2AAgentClient.class);
 
     private final A2AMessageBuilder messageBuilder;
-    private final A2AResponseParser responseParser;
 
-    public A2AAgentClient(A2AMessageBuilder messageBuilder, A2AResponseParser responseParser) {
+    public A2AAgentClient(A2AMessageBuilder messageBuilder) {
         this.messageBuilder = messageBuilder;
-        this.responseParser = responseParser;
     }
 
-    private AgentResponse send(AgentCard agentCard, Message message) {
-        logger.info("Sending message — agent: {} messageId: {}", agentCard.name(), message.messageId());
-
-        logger.info("Agent card url: {}",agentCard.supportedInterfaces() != null && !agentCard.supportedInterfaces().isEmpty()
-                        ? agentCard.supportedInterfaces().get(0).url() : "no interfaces");
-
-        ClientConfig clientConfig = ClientConfig.builder().setAcceptedOutputModes(List.of("text")).build();
-        Client client = Client.builder(agentCard)
-                .clientConfig(clientConfig)
-                .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfig())
-                .build();
-
-        CompletableFuture<AgentResponse> future = new CompletableFuture<>();
-
-        client.sendMessage(message,
-                List.of((event, card) -> {
-                    try {
-                        String contextId = responseParser.extractContextId(event);
-                        String text = responseParser.extractText(event);
-                        logger.info("From sendMessage contextId - {}, text - {}", contextId, text);
-                        future.complete(new AgentResponse(contextId, text));
-                    } catch (Exception exp) {
-                        logger.error("Error Parsing - event : {} ", exp.getMessage());
-                        future.completeExceptionally(exp);
-                    }
-                }),
-                error -> {
-                    logger.error("Error while sending message : {}", agentCard.name(), error);
-                    logger.error("Agent error — agent: {} error: {} cause: {}", agentCard.name(), error.getMessage(),error.getClass().getName());
-                    future.completeExceptionally(error);
-                }, null);
+    private AgentResponse send( AgentCard agentCard, Message message) {
+        logger.info("send — agent: {} messageId: {}",agentCard.name(),message.messageId());
 
         try {
+            JSONRPCTransport transport = new JSONRPCTransport(agentCard);
+            logger.info("transport : {} ",transport);
+            MessageSendParams params = MessageSendParams.builder().message(message).build();
+            logger.info("params : {} ", params);
+            EventKind eventKind = transport.sendMessage(params, null);
+            logger.info("eventKind  {} ",eventKind);
+            logger.info("EventKind received: {}",eventKind.getClass().getSimpleName());
 
-            return future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        } catch (TimeoutException e) {
-            logger.error("Timeout waiting for agent: {} after {}s", agentCard.name(), TIMEOUT_SECONDS);
-            throw new RuntimeException("Agent timed out after " + TIMEOUT_SECONDS + "s: " + agentCard.name(), e);
-        } catch (Exception exp) {
-            logger.error("Agent communication failed — agent: {} error: {}", agentCard.name(), exp.getMessage());
-            throw new RuntimeException("Agent communication failed: " + exp.getMessage(), exp);
+            return buildResponse(eventKind);
+
+        } catch (Exception e) {
+            logger.error("Failed — agent: {} error: {}",agentCard.name(),e.getMessage());
+
+            throw new RuntimeException("Agent communication failed: "+ e.getMessage(), e);
         }
     }
 
+
+    private AgentResponse buildResponse(EventKind eventKind) {
+        logger.info("buildResponse : {}", eventKind);
+
+        if (eventKind instanceof Task task) {
+            String contextId = task.contextId();
+            String text = textFromTask(task);
+            logger.info("Task — contextId: {} textLength: {}",contextId, text.length());
+
+            return new AgentResponse(contextId, text);
+        }
+
+        if (eventKind instanceof Message msg) {
+            String contextId = msg.contextId();
+            String text = textFromMessage(msg);
+            logger.info("Message — contextId: {} textLength: {}",contextId, text.length());
+
+            return new AgentResponse(contextId, text);
+        }
+
+        logger.error("Unexpected EventKind type: {}", eventKind.getClass().getName());
+        throw new RuntimeException("Unexpected EventKind: "+ eventKind.getClass().getSimpleName());
+    }
+
+
     public AgentResponse startNewAgentSession(AgentCard agentCard, String messageText) {
-        logger.info("Starting new session — agent: {}", agentCard.name());
-        Message message = messageBuilder.buildMessage(messageText);
+        logger.info("startNewAgentSession — agent: {}", agentCard.name());
+
+        Message message = messageBuilder.buildNewMessage(messageText);
         return send(agentCard, message);
     }
 
     public AgentResponse continueSession(AgentCard agentCard, String messageText, String contextId) {
-        logger.info("Continuing session — agent: {} contextId: {}", agentCard.name(), contextId);
-        Message message = messageBuilder.buildFollowUp(messageText, contextId);
+        logger.info("continueSession — agent: {} contextId: {}",agentCard.name(), contextId);
+
+        Message message = messageBuilder.buildFollowUpMessage( messageText, contextId);
         return send(agentCard, message);
     }
 
-    public AgentResponse approve(AgentCard agentCard, String contextId, String projectKey) {
-        logger.info("Sending approval — agent: {} contextId: {} projectKey: {}", agentCard.name(), contextId, projectKey);
-        Message message = messageBuilder.buildApproval(contextId, projectKey);
+    public AgentResponse approve(AgentCard agentCard,String contextId,String projectKey) {
+        logger.info("approve — agent: {} contextId: {} projectKey: {}",agentCard.name(),contextId, projectKey);
+
+        Message message = messageBuilder.buildApprovalMessage(contextId, projectKey);
         return send(agentCard, message);
+    }
+
+    private String textFromTask(Task task) {
+        logger.info("textFromTask : ");
+        if (task.artifacts() == null || task.artifacts().isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Artifact artifact : task.artifacts()) {
+            for (Part<?> part : artifact.parts()) {
+                if (part instanceof TextPart tp) {
+                    if (tp.text() != null  && !tp.text().isBlank()) {
+                        if (!sb.isEmpty()) {
+                            sb.append("\n");
+                        }
+                        sb.append(tp.text());
+                    }
+                }
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private String textFromMessage(Message msg) {
+        logger.info("textFromMessage : ");
+        if (msg.parts() == null || msg.parts().isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (Part<?> part : msg.parts()) {
+            if (part instanceof TextPart tp) {
+                if (tp.text() != null  && !tp.text().isBlank()) {
+                    if (!sb.isEmpty()) {
+                        sb.append("\n");
+                    }
+                    sb.append(tp.text());
+                }
+            }
+        }
+        return sb.toString();
     }
 }
