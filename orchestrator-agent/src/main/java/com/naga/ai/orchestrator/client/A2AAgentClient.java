@@ -2,6 +2,8 @@ package com.naga.ai.orchestrator.client;
 
 import io.a2a.client.Client;
 import io.a2a.client.config.ClientConfig;
+import io.a2a.client.transport.jsonrpc.JSONRPCTransport;
+import io.a2a.client.transport.jsonrpc.JSONRPCTransportConfig;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.Message;
 import org.slf4j.Logger;
@@ -29,8 +31,15 @@ public class A2AAgentClient {
     private AgentResponse send(AgentCard agentCard, Message message) {
         logger.info("Sending message — agent: {} messageId: {}", agentCard.name(), message.messageId());
 
+        logger.info("Agent card url: {}",agentCard.supportedInterfaces() != null && !agentCard.supportedInterfaces().isEmpty()
+                        ? agentCard.supportedInterfaces().get(0).url() : "no interfaces");
+
         ClientConfig clientConfig = ClientConfig.builder().setAcceptedOutputModes(List.of("text")).build();
-        Client client = Client.builder(agentCard).clientConfig(clientConfig).build();
+        Client client = Client.builder(agentCard)
+                .clientConfig(clientConfig)
+                .withTransport(JSONRPCTransport.class, new JSONRPCTransportConfig())
+                .build();
+
         CompletableFuture<AgentResponse> future = new CompletableFuture<>();
 
         client.sendMessage(message,
@@ -47,8 +56,9 @@ public class A2AAgentClient {
                 }),
                 error -> {
                     logger.error("Error while sending message : {}", agentCard.name(), error);
+                    logger.error("Agent error — agent: {} error: {} cause: {}", agentCard.name(), error.getMessage(),error.getClass().getName());
                     future.completeExceptionally(error);
-                });
+                }, null);
 
         try {
 
