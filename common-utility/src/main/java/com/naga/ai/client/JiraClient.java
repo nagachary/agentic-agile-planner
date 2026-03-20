@@ -20,8 +20,7 @@ import java.util.Map;
  */
 @Component
 public class JiraClient {
-    private static final Logger logger =
-            LoggerFactory.getLogger(JiraClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(JiraClient.class);
 
     private final WebClient webClient;
     private final JiraProperties jiraProperties;
@@ -33,8 +32,7 @@ public class JiraClient {
 
     @PostConstruct
     public void testConnection() {
-        logger.info("Verifying Jira connection to: {}",
-                jiraProperties.getBaseUrl());
+        logger.info("Verifying Jira connection to: {}", jiraProperties.getBaseUrl());
         try {
             webClient.get()
                     .uri("/rest/api/3/myself")
@@ -43,13 +41,9 @@ public class JiraClient {
                     .block();
             logger.info("Jira connection verified successfully");
         } catch (WebClientResponseException e) {
-            logger.error("Jira connection failed — status: {} " +
-                            "message: {}",
-                    e.getStatusCode(),
-                    e.getMessage());
+            logger.error("Jira connection failed — status: {}, message: {}",e.getStatusCode(), e.getMessage());
         } catch (Exception e) {
-            logger.error("Jira connection failed :— {}",
-                    e.getMessage());
+            logger.error("Jira connection failed :— {}",e.getMessage());
         }
     }
 
@@ -64,38 +58,25 @@ public class JiraClient {
         logger.info("Creating Jira ticket — summary: {}", summary);
 
         try {
-            Map<String, Object> body =
-                    buildTicketBody(summary, description, issueType);
+            Map<String, Object> body = buildTicketBody(summary, description, issueType);
             Map response = webClient.post().uri("/rest/api/3/issue")
                     .bodyValue(body)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
             String ticket = (String) response.get("key");
-            logger.info("Ticket created successfully — key: {}",
-                    ticket);
+            logger.info("Ticket created successfully — key: {}", ticket);
 
-            return new JiraTicket(
-                    ticket,
-                    summary,
-                    description,
-                    issueType
+            return new JiraTicket( ticket,summary,description,issueType
             );
         } catch (WebClientResponseException e) {
-            logger.error("Failed to create ticket :— " +
-                            "status: {} body: {}",
-                    e.getStatusCode(),
-                    e.getResponseBodyAsString());
-            throw new RuntimeException(
-                    "Jira ticket creation failed: "
-                            + e.getMessage());
+            logger.error("Failed to create ticket :— status: {} body: {}", e.getStatusCode(),e.getResponseBodyAsString());
+            throw new RuntimeException("Jira ticket creation failed: "+ e.getMessage());
         }
 
     }
 
-    private Map<String, Object> buildTicketBody(String summary,
-                                                String description,
-                                                String issueType) {
+    private Map<String, Object> buildTicketBody(String summary, String description, String issueType) {
         Map<String, Object> descContent = Map.of(
                 "type", "doc",
                 "version", 1,
@@ -113,8 +94,7 @@ public class JiraClient {
         );
 
         Map<String, Object> fields = new HashMap<>();
-        fields.put("project",
-                Map.of("key", jiraProperties.getProjectSpaceKey()));
+        fields.put("project", Map.of("key", jiraProperties.getProjectSpaceKey()));
         fields.put("summary", summary);
         fields.put("description", descContent);
         fields.put("issuetype", Map.of("name", issueType));
@@ -129,8 +109,7 @@ public class JiraClient {
     public String getSprintHistory() {
         String projectSpaceKey = jiraProperties.getProjectSpaceKey();
         String storyPointField = jiraProperties.getStoryPointsField();
-        logger.info("Fetching sprint history for project: {}",
-                projectSpaceKey);
+        logger.info("Fetching sprint history for project: {}", projectSpaceKey);
 
         String jql = "project=" + projectSpaceKey
                 + " AND issuetype=Story"
@@ -152,11 +131,8 @@ public class JiraClient {
             logger.info("Sprint history fetched successfully");
             return result;
         } catch (WebClientResponseException e) {
-            logger.error("Failed to fetch sprint history :— {}",
-                    e.getMessage());
-            throw new RuntimeException(
-                    "Sprint history fetch failed: "
-                            + e.getMessage());
+            logger.error("Failed to fetch sprint history :— {}", e.getMessage());
+            throw new RuntimeException( "Sprint history fetch failed: "+ e.getMessage());
         }
     }
 
@@ -164,10 +140,8 @@ public class JiraClient {
      * Updates the story points field on an existing Jira ticket identified by issue key.
      * Uses the configured custom field ID e.g. customfield_10016 to set the point value.
      */
-    public void updateStoryPoints(String issueKey,
-                                  int storyPoints) {
-        logger.info("Updating story points — issue: {} points: {}",
-                issueKey, storyPoints);
+    public void updateStoryPoints(String issueKey, int storyPoints) {
+        logger.info("Updating story points — issue: {} points: {}", issueKey, storyPoints);
 
         try {
             webClient.put()
@@ -182,16 +156,72 @@ public class JiraClient {
                     .retrieve()
                     .bodyToMono(Void.class)
                     .block();
-            logger.info("Story points updated :— " +
-                            "issue: {} points: {}",
-                    issueKey, storyPoints);
+            logger.info("Story points updated :—  issue: {} points: {}", issueKey, storyPoints);
         } catch (WebClientResponseException exception) {
-            logger.error("Failed to update story points :— " +
-                            "issue: {} error: {}",
-                    issueKey, exception.getMessage());
-            throw new RuntimeException(
-                    "Story points update failed: "
-                            + exception.getMessage());
+            logger.error("Failed to update story points :—  issue: {} error: {}", issueKey, exception.getMessage());
+            throw new RuntimeException("Story points update failed: "+ exception.getMessage());
         }
+    }
+
+    /**
+     * Creates a Story ticket linked to an Epic.
+     * Uses parent field for Epic link in Jira cloud.
+     */
+    public JiraTicket createTicketWithEpicLink(
+            String summary,
+            String description,
+            String issueType,
+            String epicKey) {
+        logger.info("Creating Jira ticket —  summary: {} epicKey: {}",summary, epicKey);
+        try {
+            Map<String, Object> body = buildTicketBodyWithEpic(summary, description,issueType, epicKey);
+            Map response = webClient.post()
+                    .uri("/rest/api/3/issue")
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+
+            String ticket = (String) response.get("key");
+            logger.info("Ticket created — key: {}", ticket);
+
+            return new JiraTicket(ticket, summary, description, issueType);
+
+        } catch (WebClientResponseException e) {
+            logger.error("Failed to create ticket — status: {} body: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException( "Jira ticket creation failed: "+ e.getMessage());
+        }
+    }
+
+    private Map<String, Object> buildTicketBodyWithEpic( String summary, String description, String issueType, String epicKey) {
+        Map<String, Object> descContent = Map.of(
+                "type", "doc",
+                "version", 1,
+                "content", List.of(
+                        Map.of(
+                                "type", "paragraph",
+                                "content", List.of(
+                                        Map.of(
+                                                "type", "text",
+                                                "text", description != null
+                                                        ? description
+                                                        : summary
+                                        )
+                                )
+                        )
+                )
+        );
+
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("project",Map.of("key", jiraProperties.getProjectSpaceKey()));
+        fields.put("summary", summary);
+        fields.put("description", descContent);
+        fields.put("issuetype", Map.of("name", issueType));
+
+        if (epicKey != null && !epicKey.isBlank()) {
+            fields.put("parent", Map.of("key", epicKey));
+        }
+
+        return Map.of("fields", fields);
     }
 }

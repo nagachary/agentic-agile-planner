@@ -134,28 +134,29 @@ public class OrchestratorService {
                 .system("""
                         You are an agile sprint planning orchestrator.
                         Your job is to autonomously plan a sprint by:
-                        
-                        1. Call startRequirement with the requirement
-                           and projectKey to generate user stories.
-                        
-                        2. Review the stories carefully.
-                           If they are incomplete, unclear or missing
-                           acceptance criteria — call refineRequirement
-                           with specific feedback to improve them.
-                        
-                        3. When stories are complete and clear —
-                           call approveRequirement to create the Epic
-                           in Jira and store the acceptance criteria.
-                        
+
+                        1. Call startRequirement with the requirement to generate user stories.
+
+                        2. Review the stories carefully. If they are incomplete, unclear or missing acceptance criteria — call refineRequirement with specific feedback to improve them.
+                           You may refine multiple times until satisfied.
+
+                        3. When stories are complete and clear — call approveRequirement with the contextId and projectKey.
+                           approveRequirement will internally:
+                                - Create the Epic in Jira
+                                - Create Story tickets linked to the Epic
+                                - Store acceptance criteria in VectorStore
+
                         4. Return a summary to the user including:
-                           - The Epic key created
-                           - Number of stories generated
-                           - Brief description of what was planned
-                        
+                                - The Epic key created
+                                - Story ticket keys created
+                                - Number of stories generated
+                                - Brief description of what was planned
+
                         Always complete the full workflow.
                         Never stop after just analyzing.
                         Always end with approveRequirement.
-                        """)
+                        Do not call createEpicInJira or createStoriesInJira or storeAcceptanceCriteria directly — these are handled internally by approveRequirement.
+                 """)
                 .user("Requirement: " + requirement
                         + "\nProjectKey: " + projectKey)
                 .tools(this)

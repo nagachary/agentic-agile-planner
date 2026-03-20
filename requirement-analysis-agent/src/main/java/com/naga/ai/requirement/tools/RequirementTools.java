@@ -51,12 +51,8 @@ public class RequirementTools {
             Output: structured requirement ready for story generation.
             """)
     public String analyzeRequirement(
-            @ToolParam(description =
-                    "Complete plain text requirement exactly as provided by the user. Do not modify it.")
-            String requirementText) {
-
-        logger.info("Tool analyzeRequirement called " +
-                "with requirement: {}", requirementText);
+            @ToolParam(description = "Complete plain text requirement exactly as provided by the user. Do not modify it.") String requirementText) {
+        logger.info("Tool analyzeRequirement called with requirement: {}", requirementText);
 
         // Returns structured context for LLM to generate stories
         return String.format("""
@@ -93,18 +89,12 @@ public class RequirementTools {
                             Never invent or assume the Epic key value.
             """)
     public String createEpicInJira(
-            @ToolParam(description =
-                    "Short descriptive name for the Epic")
-            String epicName,
-            @ToolParam(description =
-                    "Full requirement description")
-            String requirementDescription) {
-
+            @ToolParam(description = "Short descriptive name for the Epic") String epicName,
+            @ToolParam(description = "Full requirement description") String requirementDescription) {
         logger.info("Tool createEpicInJira called: {}", epicName);
 
         if (epicName == null || epicName.isBlank()) {
-            logger.warn("createEpicInJira called with " +
-                    "null epicName — skipping duplicate call");
+            logger.warn("createEpicInJira called with null epicName — skipping duplicate call");
             return "EpicName is NULL Or Empty";
         }
 
@@ -116,7 +106,6 @@ public class RequirementTools {
             );
 
             logger.info("Epic created: {}", epic.getTicketKey());
-
             return "Epic created successfully. " +
                     "Epic key: " + epic.getTicketKey() +
                     ". Now call storeAcceptanceCriteria with " +
@@ -150,22 +139,11 @@ public class RequirementTools {
                             Never call more than once per session.
             """)
     public String storeAcceptanceCriteria(
-            @ToolParam(description =
-                    "Complete approved user stories and acceptance criteria text")
-            String approvedStories,
-            @ToolParam(description =
-                    "Session ID for this requirement session")
-            String sessionId,
-            @ToolParam(description =
-                    "Epic key returned from createEpicInJira. " +
-                            ".Required for metadata linking.")
-            String epicKey,
-            @ToolParam(description =
-                    "Project key")
-            String projectKey) {
-
-        logger.info("Tool storeAcceptanceCriteria called " +
-                "for Epic: {} session: {}", epicKey, sessionId);
+            @ToolParam(description = "Complete approved user stories and acceptance criteria text") String approvedStories,
+            @ToolParam(description = "Session ID for this requirement session") String sessionId,
+            @ToolParam(description = "Epic key returned from createEpicInJira. Required for metadata linking.") String epicKey,
+            @ToolParam(description = "Project key") String projectKey) {
+        logger.info("Tool storeAcceptanceCriteria called for Epic: {} session: {}", epicKey, sessionId);
 
         if (epicKey == null || epicKey.isBlank()) {
             logger.warn("epicKey is null");
@@ -192,17 +170,69 @@ public class RequirementTools {
             );
 
             vectorStore.add(List.of(document));
+            logger.info("Acceptance criteria stored for Epic: {}", epicKey);
 
-            logger.info("Acceptance criteria stored " +
-                    "for Epic: {}", epicKey);
-
-            return "Acceptance criteria stored successfully. " +
-                    "Epic key: " + epicKey +
-                    ". Sprint Planner can now use this Epic.";
+            return "Acceptance criteria stored successfully. Epic key: " + epicKey +". Sprint Planner can now use this Epic.";
 
         } catch (Exception e) {
             logger.error("Failed to store acceptance criteria", e);
             return "Failed to store: " + e.getMessage();
         }
+    }
+    @Tool(name = "createStoriesInJira", description = """
+        WHEN TO USE:
+            Call this tool AFTER createEpicInJira succeeds.
+            Call once with all approved stories.
+            Creates individual Story tickets in Jira
+            linked to the Epic.
+
+        PARAMETER RULES:
+            epicKey must be real key from createEpicInJira.
+            stories must be list of story summaries.
+            Each story becomes a separate Jira Story ticket.
+
+        EXECUTION ORDER:
+            Step 1 — createEpicInJira
+            Step 2 — createStoriesInJira
+            Step 3 — storeAcceptanceCriteria
+        """)
+    public String createStoriesInJira(
+            @ToolParam(description = "Epic key from createEpicInJira") String epicKey,
+            @ToolParam(description ="List of story summaries to create") List<String> stories,
+            @ToolParam(description ="Full stories text for descriptions") String storiesDescription) {
+        logger.info("Tool createStoriesInJira — epicKey: {} count: {}",epicKey, stories != null ? stories.size() : 0);
+
+        if (epicKey == null || epicKey.isBlank()) {
+            return "SKIPPED: epicKey is required";
+        }
+        if (stories == null || stories.isEmpty()) {
+            return "SKIPPED: no stories provided";
+        }
+
+        StringBuilder result = new StringBuilder();
+        result.append("Stories created:\n");
+
+        for (String story : stories) {
+            try {
+                JiraTicket ticket =
+                        jiraClient.createTicketWithEpicLink(
+                                story,
+                                storiesDescription,
+                                "Story",
+                                epicKey);
+                logger.info("Story created: {}",
+                        ticket.getTicketKey());
+                result.append("- ")
+                        .append(ticket.getTicketKey())
+                        .append(": ")
+                        .append(story)
+                        .append("\n");
+            } catch (Exception e) {
+                logger.error("Failed to create story: {}",e.getMessage());
+                result.append("- FAILED: ").append(story).append("\n");
+            }
+        }
+
+        return result.toString();
     }
 }
